@@ -8,6 +8,7 @@ import {
   alpha,
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import HistoryIcon from '@mui/icons-material/History';
 import HomeIcon from '@mui/icons-material/Home';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -48,6 +49,9 @@ export function FinalPage() {
   const ranking = championship.ranking;
   const champion = ranking[0];
   const podium = ranking.slice(0, 3);
+  const matchHistoryPath = isHistoryView
+    ? `/ranking/${championship.id}/partidas`
+    : '/partidas';
 
   return (
     <Layout title={isHistoryView ? 'Ranking' : 'Resultado Final'} maxWidth="md">
@@ -151,12 +155,25 @@ export function FinalPage() {
           })}
         </Box>
 
-        <RankingTable
-          championship={championship}
-          ranking={ranking}
-          highlightTop={3}
-          allowCriteriaChange={false}
-        />
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<HistoryIcon />}
+              onClick={() => navigate(matchHistoryPath)}
+            >
+              Ver histórico de partidas
+            </Button>
+          </Box>
+
+          <RankingTable
+            championship={championship}
+            ranking={ranking}
+            highlightTop={3}
+            allowCriteriaChange={false}
+          />
+        </Box>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button

@@ -6,6 +6,7 @@ import {
   Chip,
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import HistoryIcon from '@mui/icons-material/History';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Layout } from '../components/Layout';
@@ -15,7 +16,7 @@ import { RankingTable } from '../components/RankingTable';
 import { ResultDialog } from '../components/ResultDialog';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useChampionshipStore } from '../store/championshipStore';
-import { allMatchesFinished } from '../utils/roundRobin';
+import { allMatchesFinished, getFinishedMatches } from '../utils/roundRobin';
 import type { Match } from '../types';
 
 const GAME_TYPE_LABELS = {
@@ -47,6 +48,7 @@ export function TournamentPage() {
   if (!championship) return null;
 
   const canFinish = allMatchesFinished(championship.rounds);
+  const hasFinishedMatches = getFinishedMatches(championship.rounds) > 0;
 
   const handleInformResult = (matchId: string) => {
     const match = championship.rounds
@@ -100,6 +102,19 @@ export function TournamentPage() {
             variant="outlined"
           />
         </Stack>
+
+        {hasFinishedMatches && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<HistoryIcon />}
+              onClick={() => navigate('/partidas')}
+            >
+              Ver histórico de partidas
+            </Button>
+          </Box>
+        )}
 
         <RankingTable
           championship={championship}
