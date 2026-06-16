@@ -149,7 +149,7 @@ export function generateMixSchedule(
 
 export function countUniquePartnershipMatches(groupSize: number): number {
   if (groupSize % 4 === 0) return (groupSize * (groupSize - 1)) / 4;
-  if (groupSize === 6) return 7;
+  if (groupSize === 6) return 6;
   return Math.floor((groupSize * (groupSize - 1)) / 4);
 }
 

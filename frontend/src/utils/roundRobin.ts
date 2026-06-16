@@ -257,7 +257,6 @@ function buildScheduleGreedy(playerIds: string[]): MatchDef[] {
 }
 
 const SIX_PLAYER_UNIQUE: [number, number, number, number][] = [
-  [0, 1, 2, 3],
   [0, 2, 1, 3],
   [0, 3, 1, 2],
   [0, 4, 1, 5],

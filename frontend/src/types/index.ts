@@ -69,6 +69,7 @@ export interface NewGameFormData {
   playerCount: number;
   courtCount: number;
   classificationCriteria: ClassificationCriteria;
+  randomizePlayers: boolean;
   playerNames: string[];
   playerGenders?: PlayerGender[];
   pairs?: [string, string][];

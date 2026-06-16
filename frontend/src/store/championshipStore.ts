@@ -57,6 +57,15 @@ function buildPlayers(names: string[], genders?: PlayerGender[]): Player[] {
   }));
 }
 
+function shufflePlayers(players: Player[]): Player[] {
+  const shuffled = [...players];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 function buildTeams(players: Player[], pairs: [string, string][]): Team[] {
   const playerByName = new Map(players.map((p) => [p.name, p]));
 
@@ -117,7 +126,10 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
 
   createChampionship: async (data) => {
     const createdAt = new Date().toISOString();
-    const players = buildPlayers(data.playerNames, data.playerGenders);
+    const basePlayers = buildPlayers(data.playerNames, data.playerGenders);
+    const players = data.randomizePlayers
+      ? shufflePlayers(basePlayers)
+      : basePlayers;
 
     let teams: Team[] | undefined;
     let rounds;

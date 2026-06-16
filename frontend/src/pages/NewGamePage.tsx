@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Checkbox,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -49,6 +50,7 @@ interface FormValues {
   playerCount: number;
   courtCount: number;
   classificationCriteria: ClassificationCriteria;
+  randomizePlayers: boolean;
   players: { name: string; gender: PlayerGender }[];
   pairs: { player1: string; player2: string }[];
 }
@@ -77,6 +79,7 @@ export function NewGamePage() {
         playerCount: 8,
         courtCount: 2,
         classificationCriteria: 'wins',
+        randomizePlayers: false,
         players: createDefaultPlayers(8, false),
         pairs: Array.from({ length: 4 }, () => ({ player1: '', player2: '' })),
       },
@@ -238,6 +241,7 @@ export function NewGamePage() {
       playerCount: data.playerCount,
       courtCount: data.courtCount,
       classificationCriteria: data.classificationCriteria,
+      randomizePlayers: data.randomizePlayers,
       playerNames: data.players.map((p) => p.name.trim()),
       playerGenders:
         data.gameType === 'mix'
@@ -387,6 +391,22 @@ export function NewGamePage() {
                   Pontos: desempate por vitórias → saldo → sorteio.
                 </Typography>
               </FormControl>
+
+              <Controller
+                name="randomizePlayers"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                      />
+                    }
+                    label="Ordenar jogadores aleatoriamente antes de gerar as partidas"
+                  />
+                )}
+              />
             </Stack>
           </Paper>
         )}
