@@ -7,7 +7,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/PageHeader';
 import { RankingTable } from '../components/RankingTable';
@@ -29,7 +29,7 @@ export function SharePage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const loadGame = async () => {
+  const loadGame = useCallback(async () => {
     if (!shareToken) return;
     try {
       const data = await getSharedGame(shareToken);
@@ -46,13 +46,20 @@ export function SharePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [shareToken]);
 
   useEffect(() => {
-    loadGame();
-    const interval = setInterval(loadGame, 15000);
-    return () => clearInterval(interval);
-  }, [shareToken]);
+    const initialLoad = setTimeout(() => {
+      void loadGame();
+    }, 0);
+    const interval = setInterval(() => {
+      void loadGame();
+    }, 15000);
+    return () => {
+      clearTimeout(initialLoad);
+      clearInterval(interval);
+    };
+  }, [loadGame]);
 
   if (loading) {
     return (
@@ -73,8 +80,6 @@ export function SharePage() {
   }
 
   const isFinished = championship.status === 'finished';
-  const shouldShowRanking =
-    isFinished || championship.ranking.some((entry) => entry.gamesPlayed > 0);
 
   return (
     <Layout title={championship.name} maxWidth="lg" showAuth={false}>
@@ -104,18 +109,16 @@ export function SharePage() {
           />
         </Stack>
 
-        {shouldShowRanking && (
-          <Stack spacing={1.25}>
-            <Typography variant="h6">
-              {isFinished ? 'Ranking final' : 'Ranking parcial'}
-            </Typography>
-            <RankingTable
-              championship={championship}
-              ranking={championship.ranking}
-              allowCriteriaChange={false}
-            />
-          </Stack>
-        )}
+        <Stack spacing={1.25}>
+          <Typography variant="h6">
+            {isFinished ? 'Tabela final' : 'Tabela de classificação'}
+          </Typography>
+          <RankingTable
+            championship={championship}
+            ranking={championship.ranking}
+            allowCriteriaChange={false}
+          />
+        </Stack>
 
         <Typography variant="h6">Rodadas</Typography>
 
