@@ -31,7 +31,7 @@ function persist(championship: Championship | null) {
 }
 
 function formatChampionshipName(date: Date): string {
-  return `Beach Tennis - ${date.toLocaleDateString('pt-BR', {
+  return `Super Beach - ${date.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

@@ -50,21 +50,22 @@ export function RankingTable({
   };
 
   return (
-    <TableContainer component={Paper} variant="outlined">
-      <Box
-        sx={{
-          p: 2,
-          pb: 0,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 1.5,
-        }}
-      >
-        <Typography variant="h6">Classificação</Typography>
+    <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+      <Box sx={{ p: { xs: 1.5, sm: 2 }, pb: 0 }}>
+        <Typography variant="h6" sx={{ mb: 1.5 }}>
+          Classificação
+        </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'stretch', sm: 'center' },
+            justifyContent: 'space-between',
+            gap: 1.5,
+            mb: 1,
+          }}
+        >
           <Typography variant="body2" color="text.secondary">
             Critério: <strong>{CRITERIA_LABELS[criteria]}</strong>
           </Typography>
@@ -75,73 +76,125 @@ export function RankingTable({
               exclusive
               value={criteria}
               onChange={handleCriteriaChange}
+              fullWidth
+              sx={{ maxWidth: { sm: 280 } }}
             >
-              <ToggleButton value="wins">Vitórias</ToggleButton>
-              <ToggleButton value="points">Pontos</ToggleButton>
+              <ToggleButton value="wins" sx={{ flex: 1 }}>
+                Vitórias
+              </ToggleButton>
+              <ToggleButton value="points" sx={{ flex: 1 }}>
+                Pontos
+              </ToggleButton>
             </ToggleButtonGroup>
           )}
         </Box>
       </Box>
 
-      <Table size="small" sx={{ mt: 1 }}>
-        <TableHead>
-          <TableRow>
-            <TableCell>#</TableCell>
-            <TableCell>{isTeamRanking ? 'Dupla' : 'Jogador'}</TableCell>
-            <TableCell align="center">Jogos</TableCell>
-            <TableCell
-              align="center"
-              sx={criteria === 'wins' ? { fontWeight: 700 } : undefined}
-            >
-              Vitórias
-            </TableCell>
-            <TableCell align="center">Derrotas</TableCell>
-            <TableCell align="center">Games Pró</TableCell>
-            <TableCell align="center">Games Contra</TableCell>
-            <TableCell align="center">Saldo</TableCell>
-            <TableCell
-              align="center"
-              sx={criteria === 'points' ? { fontWeight: 700 } : undefined}
-            >
-              Pontos
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {ranking.map((entry, index) => (
-            <TableRow
-              key={entry.playerId}
-              sx={
-                index < highlightTop
-                  ? { bgcolor: 'action.hover' }
-                  : undefined
-              }
-            >
-              <TableCell>{index + 1}</TableCell>
-              <TableCell>
-                {getRankingEntryName(championship, entry)}
+      <TableContainer className="table-scroll" sx={{ overflowX: 'auto' }}>
+        <Table size="small" sx={{ minWidth: 520 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell
+                sx={{
+                  position: 'sticky',
+                  left: 0,
+                  zIndex: 2,
+                  minWidth: 36,
+                }}
+              >
+                #
               </TableCell>
-              <TableCell align="center">{entry.gamesPlayed}</TableCell>
+              <TableCell
+                sx={{
+                  position: 'sticky',
+                  left: 36,
+                  zIndex: 2,
+                  minWidth: { xs: 100, sm: 140 },
+                  boxShadow: '4px 0 8px -4px rgba(0,0,0,0.08)',
+                }}
+              >
+                {isTeamRanking ? 'Dupla' : 'Jogador'}
+              </TableCell>
+              <TableCell align="center">J</TableCell>
               <TableCell
                 align="center"
-                sx={criteria === 'wins' ? { fontWeight: 700 } : undefined}
+                sx={criteria === 'wins' ? { fontWeight: 700, color: 'primary.main' } : undefined}
               >
-                {entry.wins}
+                V
               </TableCell>
-              <TableCell align="center">{entry.losses}</TableCell>
-              <TableCell align="center">{entry.gamesFor}</TableCell>
-              <TableCell align="center">{entry.gamesAgainst}</TableCell>
-              <TableCell align="center">{entry.balance}</TableCell>
+              <TableCell align="center">D</TableCell>
+              <TableCell align="center">GP</TableCell>
+              <TableCell align="center">GC</TableCell>
+              <TableCell align="center">S</TableCell>
               <TableCell
                 align="center"
-                sx={criteria === 'points' ? { fontWeight: 700 } : undefined}
+                sx={criteria === 'points' ? { fontWeight: 700, color: 'primary.main' } : undefined}
               >
-                {entry.points}
+                Pts
               </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {ranking.map((entry, index) => (
+              <TableRow
+                key={entry.playerId}
+                sx={{
+                  bgcolor:
+                    index < highlightTop ? 'action.hover' : 'background.paper',
+                  ...(index === 0 && highlightTop > 0 && {
+                    bgcolor: 'rgba(251, 191, 36, 0.12)',
+                  }),
+                }}
+              >
+                <TableCell
+                  sx={{
+                    position: 'sticky',
+                    left: 0,
+                    bgcolor: 'inherit',
+                    fontWeight: 700,
+                    zIndex: 1,
+                  }}
+                >
+                  {index + 1}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    position: 'sticky',
+                    left: 36,
+                    bgcolor: 'inherit',
+                    fontWeight: 600,
+                    zIndex: 1,
+                    maxWidth: { xs: 120, sm: 180 },
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '4px 0 8px -4px rgba(0,0,0,0.06)',
+                  }}
+                >
+                  {getRankingEntryName(championship, entry)}
+                </TableCell>
+                <TableCell align="center">{entry.gamesPlayed}</TableCell>
+                <TableCell
+                  align="center"
+                  sx={criteria === 'wins' ? { fontWeight: 700 } : undefined}
+                >
+                  {entry.wins}
+                </TableCell>
+                <TableCell align="center">{entry.losses}</TableCell>
+                <TableCell align="center">{entry.gamesFor}</TableCell>
+                <TableCell align="center">{entry.gamesAgainst}</TableCell>
+                <TableCell align="center">{entry.balance}</TableCell>
+                <TableCell
+                  align="center"
+                  sx={criteria === 'points' ? { fontWeight: 700 } : undefined}
+                >
+                  {entry.points}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Paper>
   );
 }

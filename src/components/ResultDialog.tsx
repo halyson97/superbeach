@@ -116,9 +116,11 @@ export function ResultDialog({
             />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleClose}>Cancelar</Button>
-          <Button type="submit" variant="contained">
+        <DialogActions sx={{ px: 3, pb: 2, flexDirection: { xs: 'column-reverse', sm: 'row' }, gap: 1 }}>
+          <Button onClick={handleClose} fullWidth>
+            Cancelar
+          </Button>
+          <Button type="submit" variant="contained" fullWidth>
             Salvar
           </Button>
         </DialogActions>

@@ -5,18 +5,23 @@ import {
   CardContent,
   Stack,
   Typography,
+  alpha,
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import HomeIcon from '@mui/icons-material/Home';
+import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/PageHeader';
 import { RankingTable } from '../components/RankingTable';
 import { useChampionshipStore } from '../store/championshipStore';
 import { getRankingEntryName } from '../utils/ranking';
+import { BRAND } from '../constants/brand';
 
 const PODIUM_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 const PODIUM_LABELS = ['1º Lugar', '2º Lugar', '3º Lugar'];
+const PODIUM_HEIGHTS = { xs: 'auto', sm: [140, 120, 100] };
 
 export function FinalPage() {
   const navigate = useNavigate();
@@ -41,15 +46,49 @@ export function FinalPage() {
   };
 
   return (
-    <Layout title="Resultado Final">
-      <Stack spacing={4}>
-        <Box sx={{ textAlign: 'center' }}>
-          <EmojiEventsIcon sx={{ fontSize: 64, color: 'warning.main', mb: 1 }} />
-          <Typography variant="h4" sx={{ fontWeight: 700 }} gutterBottom>
-            Campeonato Finalizado!
+    <Layout title="Resultado Final" maxWidth="md">
+      <Stack spacing={{ xs: 3, sm: 4 }}>
+        <PageHeader
+          title="Campeonato Finalizado!"
+          subtitle={championship.name}
+          backTo="/"
+          backLabel="Início"
+        />
+
+        <Box
+          sx={{
+            textAlign: 'center',
+            py: { xs: 2, sm: 3 },
+            px: 2,
+            borderRadius: 4,
+            background: `linear-gradient(135deg, ${alpha('#0891B2', 0.12)} 0%, ${alpha('#F97316', 0.08)} 100%)`,
+            border: '1px solid',
+            borderColor: alpha('#0891B2', 0.15),
+          }}
+        >
+          <EmojiEventsIcon sx={{ fontSize: { xs: 48, sm: 64 }, color: 'warning.main', mb: 1 }} />
+          <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+            Campeão {BRAND.name}
           </Typography>
-          <Typography variant="h5" color="primary" sx={{ fontWeight: 600 }}>
-            Campeão: {getRankingEntryName(championship, champion)}
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 800,
+              fontSize: { xs: '1.5rem', sm: '2rem' },
+              mt: 0.5,
+              background: 'linear-gradient(135deg, #0891B2 0%, #F97316 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            {getRankingEntryName(championship, champion)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {championship.classificationCriteria === 'points'
+              ? `${champion.points} pontos`
+              : `${champion.wins} vitórias`}
+            {' · '}
+            Saldo {champion.balance}
           </Typography>
         </Box>
 
@@ -58,42 +97,64 @@ export function FinalPage() {
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
             gap: 2,
+            alignItems: { sm: 'flex-end' },
           }}
         >
-          {podium.map((entry, index) => (
-            <Card
-              key={entry.playerId}
-              sx={{
-                borderTop: `4px solid ${PODIUM_COLORS[index]}`,
-                textAlign: 'center',
-              }}
-            >
-              <CardContent>
-                <Typography variant="overline" color="text.secondary">
-                  {PODIUM_LABELS[index]}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {getRankingEntryName(championship, entry)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {championship.classificationCriteria === 'points'
-                    ? `${entry.points} pontos`
-                    : `${entry.wins} vitórias`}
-                  {' · '}
-                  Saldo: {entry.balance}
-                </Typography>
-              </CardContent>
-            </Card>
-          ))}
+          {[1, 0, 2].map((podiumIndex) => {
+            const entry = podium[podiumIndex];
+            if (!entry) return null;
+            const heights = PODIUM_HEIGHTS.sm as number[];
+            return (
+              <Card
+                key={entry.playerId}
+                sx={{
+                  order: { xs: podiumIndex, sm: podiumIndex === 0 ? 2 : podiumIndex === 1 ? 1 : 3 },
+                  borderTop: `4px solid ${PODIUM_COLORS[podiumIndex]}`,
+                  textAlign: 'center',
+                  minHeight: { sm: heights[podiumIndex] },
+                  display: 'flex',
+                  alignItems: 'center',
+                  ...(podiumIndex === 0 && {
+                    transform: { sm: 'translateY(-8px)' },
+                    boxShadow: `0 12px 32px ${alpha('#FFD700', 0.2)}`,
+                  }),
+                }}
+              >
+                <CardContent sx={{ width: '100%', py: { xs: 2, sm: 2.5 } }}>
+                  <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700 }}>
+                    {PODIUM_LABELS[podiumIndex]}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: { xs: '1rem', sm: '1.15rem' },
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {getRankingEntryName(championship, entry)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {championship.classificationCriteria === 'points'
+                      ? `${entry.points} pts`
+                      : `${entry.wins} vitórias`}
+                    {' · '}
+                    Saldo {entry.balance}
+                  </Typography>
+                </CardContent>
+              </Card>
+            );
+          })}
         </Box>
 
         <RankingTable
           championship={championship}
           ranking={ranking}
           highlightTop={3}
+          allowCriteriaChange={false}
         />
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button
             variant="outlined"
             startIcon={<HomeIcon />}
@@ -104,6 +165,7 @@ export function FinalPage() {
           </Button>
           <Button
             variant="contained"
+            startIcon={<AddIcon />}
             onClick={handleNewChampionship}
             fullWidth
           >

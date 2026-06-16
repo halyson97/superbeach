@@ -1,39 +1,12 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider, CssBaseline } from '@mui/material';
 import { HomePage } from './pages/HomePage';
 import { NewGamePage } from './pages/NewGamePage';
 import { TournamentPage } from './pages/TournamentPage';
 import { FinalPage } from './pages/FinalPage';
 import { useChampionshipStore } from './store/championshipStore';
-
-const theme = createTheme({
-  palette: {
-    primary: { main: '#1565c0' },
-    secondary: { main: '#ff6f00' },
-    background: { default: '#f5f7fa' },
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: { textTransform: 'none', borderRadius: 8 },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: { borderRadius: 12 },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: { borderRadius: 12 },
-      },
-    },
-  },
-});
+import { theme } from './theme';
 
 function AppRoutes() {
   const hydrate = useChampionshipStore((s) => s.hydrate);

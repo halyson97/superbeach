@@ -16,12 +16,15 @@ import {
   StepLabel,
   Paper,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/PageHeader';
 import { useChampionshipStore } from '../store/championshipStore';
 import type { ClassificationCriteria, GameType, PlayerGender } from '../types';
 
@@ -53,6 +56,8 @@ const STEPS = ['Configuração', 'Jogadores', 'Duplas'];
 
 export function NewGamePage() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const createChampionship = useChampionshipStore((s) => s.createChampionship);
   const [activeStep, setActiveStep] = useState(0);
   const [formError, setFormError] = useState('');
@@ -237,8 +242,8 @@ export function NewGamePage() {
     gameType === 'fixed_double' ? STEPS : STEPS.slice(0, 2);
 
   return (
-    <Layout title="Novo Jogo">
-      <Stack spacing={3}>
+    <Layout title="Novo Campeonato" maxWidth="md">
+      <Stack spacing={{ xs: 2.5, sm: 3 }}>
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate('/')}
@@ -247,7 +252,17 @@ export function NewGamePage() {
           Voltar
         </Button>
 
-        <Stepper activeStep={activeStep} alternativeLabel>
+        <PageHeader
+          title="Novo Campeonato"
+          subtitle="Configure o torneio e cadastre os jogadores"
+        />
+
+        <Stepper
+          activeStep={activeStep}
+          alternativeLabel={!isMobile}
+          orientation={isMobile ? 'vertical' : 'horizontal'}
+          sx={{ px: { xs: 0, sm: 1 } }}
+        >
           {steps.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
@@ -258,10 +273,10 @@ export function NewGamePage() {
         {formError && <Alert severity="error">{formError}</Alert>}
 
         {activeStep === 0 && (
-          <Paper variant="outlined" sx={{ p: 3 }}>
+          <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
             <Stack spacing={3}>
               <FormControl>
-                <FormLabel>Tipo de Jogo</FormLabel>
+                <FormLabel sx={{ mb: 1, fontWeight: 600 }}>Tipo de Jogo</FormLabel>
                 <Controller
                   name="gameType"
                   control={control}
@@ -293,7 +308,7 @@ export function NewGamePage() {
               </FormControl>
 
               <FormControl fullWidth>
-                <FormLabel sx={{ mb: 1 }}>Quantidade de Jogadores</FormLabel>
+                <FormLabel sx={{ mb: 1, fontWeight: 600 }}>Quantidade de Jogadores</FormLabel>
                 <Controller
                   name="playerCount"
                   control={control}
@@ -320,7 +335,7 @@ export function NewGamePage() {
               </FormControl>
 
               <FormControl fullWidth>
-                <FormLabel sx={{ mb: 1 }}>Quantidade de Quadras</FormLabel>
+                <FormLabel sx={{ mb: 1, fontWeight: 600 }}>Quantidade de Quadras</FormLabel>
                 <Controller
                   name="courtCount"
                   control={control}
@@ -337,7 +352,7 @@ export function NewGamePage() {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Critério de Classificação</FormLabel>
+                <FormLabel sx={{ mb: 1, fontWeight: 600 }}>Critério de Classificação</FormLabel>
                 <Controller
                   name="classificationCriteria"
                   control={control}
@@ -366,7 +381,7 @@ export function NewGamePage() {
         )}
 
         {activeStep === 1 && (
-          <Paper variant="outlined" sx={{ p: 3 }}>
+          <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
             <Typography variant="h6" gutterBottom>
               Cadastro dos Jogadores
             </Typography>
@@ -379,7 +394,11 @@ export function NewGamePage() {
               {fields.map((field, index) => (
                 <Box
                   key={field.id}
-                  sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: { xs: 1.5, sm: 2 },
+                  }}
                 >
                   <Controller
                     name={`players.${index}.name`}
@@ -388,12 +407,8 @@ export function NewGamePage() {
                     render={({ field: inputField, fieldState }) => (
                       <TextField
                         {...inputField}
-                        label={
-                          isMix
-                            ? `Jogador ${index + 1}`
-                            : `Jogador ${index + 1}`
-                        }
-                        sx={{ flex: 1, minWidth: 160 }}
+                        label={`Jogador ${index + 1}`}
+                        fullWidth
                         error={!!fieldState.error}
                         helperText={fieldState.error?.message}
                       />
@@ -404,8 +419,8 @@ export function NewGamePage() {
                       name={`players.${index}.gender`}
                       control={control}
                       render={({ field: genderField }) => (
-                        <FormControl sx={{ minWidth: 140 }}>
-                          <FormLabel>Gênero</FormLabel>
+                        <FormControl fullWidth sx={{ minWidth: { sm: 140 } }}>
+                          <FormLabel sx={{ mb: 0.5 }}>Gênero</FormLabel>
                           <Select {...genderField}>
                             <MenuItem value="male">Homem</MenuItem>
                             <MenuItem value="female">Mulher</MenuItem>
@@ -421,7 +436,7 @@ export function NewGamePage() {
         )}
 
         {activeStep === 2 && gameType === 'fixed_double' && (
-          <Paper variant="outlined" sx={{ p: 3 }}>
+          <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
             <Typography variant="h6" gutterBottom>
               Formação das Duplas
             </Typography>
@@ -432,13 +447,20 @@ export function NewGamePage() {
               {pairFields.map((field, index) => {
                 const playerNames = getValues('players').map((p) => p.name.trim());
                 return (
-                  <Box key={field.id} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Box
+                    key={field.id}
+                    sx={{
+                      display: 'flex',
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      gap: { xs: 1.5, sm: 2 },
+                    }}
+                  >
                     <Controller
                       name={`pairs.${index}.player1`}
                       control={control}
                       render={({ field: f }) => (
-                        <FormControl sx={{ flex: 1, minWidth: 140 }}>
-                          <FormLabel>Dupla {index + 1} - Jogador 1</FormLabel>
+                        <FormControl fullWidth>
+                          <FormLabel sx={{ mb: 0.5 }}>Dupla {index + 1} - Jogador 1</FormLabel>
                           <Select {...f} displayEmpty>
                             <MenuItem value="" disabled>
                               Selecione
@@ -456,8 +478,8 @@ export function NewGamePage() {
                       name={`pairs.${index}.player2`}
                       control={control}
                       render={({ field: f }) => (
-                        <FormControl sx={{ flex: 1, minWidth: 140 }}>
-                          <FormLabel>Jogador 2</FormLabel>
+                        <FormControl fullWidth>
+                          <FormLabel sx={{ mb: 0.5 }}>Jogador 2</FormLabel>
                           <Select {...f} displayEmpty>
                             <MenuItem value="" disabled>
                               Selecione
@@ -478,11 +500,17 @@ export function NewGamePage() {
           </Paper>
         )}
 
-        <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
+        <Stack
+          direction={{ xs: 'column-reverse', sm: 'row' }}
+          spacing={1.5}
+          sx={{ justifyContent: 'flex-end' }}
+        >
           {activeStep > 0 && (
-            <Button onClick={() => setActiveStep((s) => s - 1)}>Anterior</Button>
+            <Button onClick={() => setActiveStep((s) => s - 1)} fullWidth={isMobile}>
+              Anterior
+            </Button>
           )}
-          <Button variant="contained" onClick={handleNext}>
+          <Button variant="contained" onClick={handleNext} fullWidth={isMobile}>
             {activeStep === steps.length - 1 ? 'Iniciar Campeonato' : 'Próximo'}
           </Button>
         </Stack>
