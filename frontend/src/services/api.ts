@@ -1,4 +1,23 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? '';
+const PRODUCTION_API_URL = 'https://superbeach.onrender.com';
+
+function resolveApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_URL?.trim();
+  if (envUrl) {
+    return envUrl.replace(/\/$/, '');
+  }
+
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  if (import.meta.env.DEV || isLocalhost) {
+    return '';
+  }
+
+  return PRODUCTION_API_URL;
+}
+
+const API_BASE = resolveApiBase();
 
 export class ApiError extends Error {
   status: number;

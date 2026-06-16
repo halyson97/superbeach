@@ -10,6 +10,11 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET ?? 'dev-secret',
   port: Number(process.env.PORT ?? 8000),
   nodeEnv: process.env.NODE_ENV ?? 'development',
+  keepAliveUrl: process.env.KEEP_ALIVE_URL ?? 'https://superbeach.onrender.com/',
+  keepAliveIntervalMs: Number(process.env.KEEP_ALIVE_INTERVAL_MS ?? 30_000),
+  keepAliveEnabled:
+    process.env.KEEP_ALIVE_ENABLED === 'true' ||
+    (process.env.KEEP_ALIVE_ENABLED !== 'false' && process.env.NODE_ENV === 'production'),
 };
 
 if (!env.mongoUri) {

@@ -7,6 +7,7 @@ import gamesRoutes from './routes/games.js';
 import shareRoutes from './routes/share.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 import { AppError } from './utils/AppError.js';
+import { startKeepAliveSchedule } from './schedule/keepAlive.js';
 
 const app = express();
 
@@ -38,6 +39,7 @@ async function start() {
 
   app.listen(env.port, () => {
     console.log(`API rodando em http://localhost:${env.port}`);
+    startKeepAliveSchedule();
   });
 }
 
