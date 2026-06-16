@@ -1,51 +1,79 @@
-# Beach Tennis - Sistema de Sorteio de Jogos
+# Super Beach
 
-Aplicação web para organizar campeonatos de Beach Tennis com geração automática de confrontos (Round Robin), registro de resultados e classificação em tempo real.
+Aplicação para organizar jogos de Beach Tennis com geração automática de confrontos, registro de resultados e classificação em tempo real.
 
-## Tecnologias
+## Estrutura do projeto
 
-- React + TypeScript
-- Vite
-- Material UI (MUI)
-- React Hook Form
-- Zustand
-- LocalStorage
+```
+superbeach/
+├── frontend/     # React + Vite + MUI
+├── backend/      # Express + MongoDB + Mongoose
+├── package.json  # Scripts para rodar ambos
+└── README.md
+```
 
 ## Como executar
 
+### 1. Instalar dependências
+
 ```bash
-npm install
-npm run dev
+npm run install:all
+```
+
+Ou separadamente:
+
+```bash
+npm install --prefix frontend
+npm install --prefix backend
+```
+
+### 2. Configurar variáveis de ambiente
+
+Copie o arquivo de exemplo e configure o backend:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Variáveis no `backend/.env`:
+
+- `MONGO_URI` — conexão MongoDB
+- `JWT_SECRET` — chave para tokens de autenticação
+- `PORT` — porta da API (padrão: 8000)
+
+### 3. Rodar em desenvolvimento
+
+**Terminal 1 — Backend:**
+```bash
+npm run dev:backend
+```
+
+**Terminal 2 — Frontend:**
+```bash
+npm run dev:frontend
 ```
 
 Acesse `http://localhost:5173`
+
+O frontend faz proxy das requisições `/api` para `http://localhost:8000`.
 
 ## Build de produção
 
 ```bash
 npm run build
-npm run preview
 ```
 
 ## Funcionalidades
 
-- Criação de campeonatos Individual ou Dupla Fixa
-- 6, 8, 12 ou 16 jogadores
-- 1 a 4 quadras com distribuição equilibrada
+- Cadastro e login de usuários
+- Jogos salvos no MongoDB (cada usuário vê apenas os seus)
+- Individual, Dupla Fixa e Mix
 - Classificação por vitórias ou pontos
-- Algoritmo Round Robin
-- Persistência automática no LocalStorage
-- Classificação em tempo real
-- Tela final com campeão e pódio
+- Histórico de partidas e jogos finalizados
+- Compartilhamento de link para acompanhamento público
 
-## Estrutura
+## Tecnologias
 
-```
-src/
- ├── pages/        # Telas da aplicação
- ├── components/   # Componentes reutilizáveis
- ├── store/        # Estado global (Zustand)
- ├── services/     # Persistência LocalStorage
- ├── types/        # Tipos TypeScript
- └── utils/        # Round Robin, ranking, etc.
-```
+**Frontend:** React, TypeScript, Vite, MUI, Zustand, React Hook Form
+
+**Backend:** Express.js, MongoDB, Mongoose, JWT, bcrypt
