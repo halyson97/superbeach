@@ -117,14 +117,17 @@ router.put(
 router.delete(
   '/:championshipId',
   asyncHandler(async (req: AuthRequest, res) => {
-    const result = await Game.deleteOne({
+    const game = await Game.findOne({
       userId: req.userId,
       championshipId: req.params.championshipId,
     });
 
-    if (result.deletedCount === 0) {
+    if (!game) {
       throw new AppError('Jogo não encontrado', 404);
     }
+
+    game.deletedAt = new Date();
+    await game.save();
 
     res.status(204).send();
   }),

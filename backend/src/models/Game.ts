@@ -6,6 +6,7 @@ export interface IGame extends Document {
   championshipId: string;
   championship: Record<string, unknown>;
   status: 'active' | 'finished';
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,9 +18,18 @@ const gameSchema = new Schema<IGame>(
     championshipId: { type: String, required: true, index: true },
     championship: { type: Schema.Types.Mixed, required: true },
     status: { type: String, enum: ['active', 'finished'], required: true, index: true },
+    deletedAt: { type: Date, default: null, index: true },
   },
   { timestamps: true },
 );
+
+function excludeDeleted(this: mongoose.Query<unknown, unknown>) {
+  void this.where({ deletedAt: null });
+}
+
+gameSchema.pre('find', excludeDeleted);
+gameSchema.pre('findOne', excludeDeleted);
+gameSchema.pre('countDocuments', excludeDeleted);
 
 gameSchema.index({ userId: 1, status: 1 });
 
