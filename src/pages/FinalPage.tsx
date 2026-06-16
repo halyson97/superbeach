@@ -10,7 +10,7 @@ import {
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import HomeIcon from '@mui/icons-material/Home';
 import AddIcon from '@mui/icons-material/Add';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/PageHeader';
@@ -25,32 +25,36 @@ const PODIUM_HEIGHTS = { xs: 'auto', sm: [140, 120, 100] };
 
 export function FinalPage() {
   const navigate = useNavigate();
-  const championship = useChampionshipStore((s) => s.championship);
-  const deleteChampionship = useChampionshipStore((s) => s.deleteChampionship);
+  const { id } = useParams();
+  const current = useChampionshipStore((s) => s.championship);
+  const getChampionshipById = useChampionshipStore((s) => s.getChampionshipById);
+  const hasActiveGame = current?.status === 'active';
+
+  const championship = id ? getChampionshipById(id) : current;
+  const isHistoryView = !!id;
 
   useEffect(() => {
     if (!championship) {
       navigate('/');
+      return;
+    }
+    if (championship.status !== 'finished') {
+      navigate('/torneio');
     }
   }, [championship, navigate]);
 
-  if (!championship) return null;
+  if (!championship || championship.status !== 'finished') return null;
 
   const ranking = championship.ranking;
   const champion = ranking[0];
   const podium = ranking.slice(0, 3);
 
-  const handleNewChampionship = () => {
-    deleteChampionship();
-    navigate('/novo');
-  };
-
   return (
-    <Layout title="Resultado Final" maxWidth="md">
+    <Layout title={isHistoryView ? 'Ranking' : 'Resultado Final'} maxWidth="md">
       <Stack spacing={{ xs: 3, sm: 4 }}>
         <PageHeader
-          title="Jogo Finalizado!"
-          subtitle={championship.name}
+          title={isHistoryView ? championship.name : 'Jogo Finalizado!'}
+          subtitle={isHistoryView ? 'Ranking final do jogo' : championship.name}
           backTo="/"
           backLabel="Início"
         />
@@ -163,14 +167,16 @@ export function FinalPage() {
           >
             Voltar ao Início
           </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleNewChampionship}
-            fullWidth
-          >
-            Novo Jogo
-          </Button>
+          {!hasActiveGame && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => navigate('/novo')}
+              fullWidth
+            >
+              Novo Jogo
+            </Button>
+          )}
         </Stack>
       </Stack>
     </Layout>

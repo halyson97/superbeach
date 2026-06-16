@@ -21,6 +21,7 @@ function AppRoutes() {
       <Route path="/novo" element={<NewGamePage />} />
       <Route path="/torneio" element={<TournamentPage />} />
       <Route path="/final" element={<FinalPage />} />
+      <Route path="/ranking/:id" element={<FinalPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

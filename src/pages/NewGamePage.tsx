@@ -4,6 +4,7 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
+  InputLabel,
   MenuItem,
   Radio,
   RadioGroup,
@@ -22,7 +23,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/PageHeader';
 import { useChampionshipStore } from '../store/championshipStore';
@@ -61,6 +62,13 @@ export function NewGamePage() {
   const createChampionship = useChampionshipStore((s) => s.createChampionship);
   const [activeStep, setActiveStep] = useState(0);
   const [formError, setFormError] = useState('');
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (formError && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [formError]);
 
   const { control, watch, handleSubmit, setValue, getValues, trigger } =
     useForm<FormValues>({
@@ -120,7 +128,10 @@ export function NewGamePage() {
 
   const validatePlayers = async (): Promise<boolean> => {
     const valid = await trigger('players');
-    if (!valid) return false;
+    if (!valid) {
+      setFormError('Preencha todos os nomes dos jogadores.');
+      return false;
+    }
 
     const players = getValues('players').map((p) => p.name.trim());
     if (players.some((name) => !name)) {
@@ -189,6 +200,8 @@ export function NewGamePage() {
   };
 
   const handleNext = async () => {
+    setFormError('');
+
     if (activeStep === 0) {
       setActiveStep(1);
       return;
@@ -269,8 +282,6 @@ export function NewGamePage() {
             </Step>
           ))}
         </Stepper>
-
-        {formError && <Alert severity="error">{formError}</Alert>}
 
         {activeStep === 0 && (
           <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
@@ -395,9 +406,12 @@ export function NewGamePage() {
                 <Box
                   key={field.id}
                   sx={{
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
+                    display: 'grid',
+                    gridTemplateColumns: isMix
+                      ? { xs: '1fr', sm: '1fr 180px' }
+                      : '1fr',
                     gap: { xs: 1.5, sm: 2 },
+                    alignItems: 'start',
                   }}
                 >
                   <Controller
@@ -410,7 +424,7 @@ export function NewGamePage() {
                         label={`Jogador ${index + 1}`}
                         fullWidth
                         error={!!fieldState.error}
-                        helperText={fieldState.error?.message}
+                        helperText={fieldState.error?.message ?? ' '}
                       />
                     )}
                   />
@@ -419,9 +433,13 @@ export function NewGamePage() {
                       name={`players.${index}.gender`}
                       control={control}
                       render={({ field: genderField }) => (
-                        <FormControl fullWidth sx={{ minWidth: { sm: 140 } }}>
-                          <FormLabel sx={{ mb: 0.5 }}>Gênero</FormLabel>
-                          <Select {...genderField}>
+                        <FormControl fullWidth>
+                          <InputLabel id={`player-gender-${index}`}>Gênero</InputLabel>
+                          <Select
+                            {...genderField}
+                            labelId={`player-gender-${index}`}
+                            label="Gênero"
+                          >
                             <MenuItem value="male">Homem</MenuItem>
                             <MenuItem value="female">Mulher</MenuItem>
                           </Select>
@@ -500,13 +518,27 @@ export function NewGamePage() {
           </Paper>
         )}
 
+        <Box ref={errorRef}>
+          {formError && (
+            <Alert severity="error" sx={{ mb: 1.5 }}>
+              {formError}
+            </Alert>
+          )}
+        </Box>
+
         <Stack
           direction={{ xs: 'column-reverse', sm: 'row' }}
           spacing={1.5}
           sx={{ justifyContent: 'flex-end' }}
         >
           {activeStep > 0 && (
-            <Button onClick={() => setActiveStep((s) => s - 1)} fullWidth={isMobile}>
+            <Button
+              onClick={() => {
+                setFormError('');
+                setActiveStep((s) => s - 1);
+              }}
+              fullWidth={isMobile}
+            >
               Anterior
             </Button>
           )}

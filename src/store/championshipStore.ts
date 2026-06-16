@@ -13,21 +13,31 @@ import {
 } from '../utils/roundRobin';
 import { generateMixSchedule } from '../utils/mixSchedule';
 import { recalculateRanking } from '../utils/ranking';
-import { clearChampionship, loadChampionship, saveChampionship } from '../services/storage';
+import { loadAppStorage, saveAppStorage } from '../services/storage';
 
 interface ChampionshipStore {
   championship: Championship | null;
+  history: Championship[];
   hydrate: () => void;
+  getChampionshipById: (id: string) => Championship | null;
   createChampionship: (data: NewGameFormData) => void;
   deleteChampionship: () => void;
+  deleteFromHistory: (id: string) => void;
   startMatch: (matchId: string) => void;
   submitResult: (matchId: string, score1: number, score2: number) => void;
   updateClassificationCriteria: (criteria: Championship['classificationCriteria']) => void;
   finishChampionship: () => void;
 }
 
-function persist(championship: Championship | null) {
-  saveChampionship(championship);
+function persist(current: Championship | null, history: Championship[]) {
+  saveAppStorage({ current, history });
+}
+
+function withRanking(championship: Championship): Championship {
+  return {
+    ...championship,
+    ranking: recalculateRanking(championship),
+  };
 }
 
 function formatChampionshipName(date: Date): string {
@@ -66,19 +76,38 @@ function buildTeams(players: Player[], pairs: [string, string][]): Team[] {
   });
 }
 
+function sortHistory(history: Championship[]): Championship[] {
+  return [...history].sort((a, b) => {
+    const dateA = a.finishedAt ?? a.createdAt;
+    const dateB = b.finishedAt ?? b.createdAt;
+    return dateB.localeCompare(dateA);
+  });
+}
+
 export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
   championship: null,
+  history: [],
 
   hydrate: () => {
-    const saved = loadChampionship();
-    if (saved) {
-      saved.ranking = recalculateRanking(saved);
-      saveChampionship(saved);
-      set({ championship: saved });
+    const saved = loadAppStorage();
+    const current = saved.current ? withRanking(saved.current) : null;
+    const history = saved.history.map(withRanking);
+
+    if (current || history.length > 0) {
+      persist(current, history);
     }
+
+    set({ championship: current, history: sortHistory(history) });
+  },
+
+  getChampionshipById: (id) => {
+    const { championship, history } = get();
+    if (championship?.id === id) return championship;
+    return history.find((item) => item.id === id) ?? null;
   },
 
   createChampionship: (data) => {
+    const { championship, history } = get();
     const createdAt = new Date().toISOString();
     const players = buildPlayers(data.playerNames, data.playerGenders);
 
@@ -94,7 +123,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       rounds = generateIndividualSchedule(players, data.courtCount);
     }
 
-    const championship: Championship = {
+    const newChampionship: Championship = {
       id: generateId(),
       name: formatChampionshipName(new Date(createdAt)),
       createdAt,
@@ -109,18 +138,32 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       status: 'active',
     };
 
-    championship.ranking = recalculateRanking(championship);
-    persist(championship);
-    set({ championship });
+    const updated = withRanking(newChampionship);
+
+    let nextHistory = history;
+    if (championship?.status === 'finished') {
+      nextHistory = sortHistory([championship, ...history]);
+    }
+
+    persist(updated, nextHistory);
+    set({ championship: updated, history: nextHistory });
   },
 
   deleteChampionship: () => {
-    clearChampionship();
+    const { history } = get();
+    persist(null, history);
     set({ championship: null });
   },
 
+  deleteFromHistory: (id) => {
+    const { championship, history } = get();
+    const nextHistory = history.filter((item) => item.id !== id);
+    persist(championship, nextHistory);
+    set({ history: nextHistory });
+  },
+
   startMatch: (matchId) => {
-    const { championship } = get();
+    const { championship, history } = get();
     if (!championship) return;
 
     const updated: Championship = {
@@ -135,12 +178,12 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       })),
     };
 
-    persist(updated);
+    persist(updated, history);
     set({ championship: updated });
   },
 
   submitResult: (matchId, score1, score2) => {
-    const { championship } = get();
+    const { championship, history } = get();
     if (!championship) return;
 
     const updated: Championship = {
@@ -160,36 +203,35 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       })),
     };
 
-    updated.ranking = recalculateRanking(updated);
-    persist(updated);
-    set({ championship: updated });
+    const withUpdatedRanking = withRanking(updated);
+    persist(withUpdatedRanking, history);
+    set({ championship: withUpdatedRanking });
   },
 
   updateClassificationCriteria: (criteria) => {
-    const { championship } = get();
+    const { championship, history } = get();
     if (!championship) return;
 
-    const updated: Championship = {
+    const updated = withRanking({
       ...championship,
       classificationCriteria: criteria,
-    };
-    updated.ranking = recalculateRanking(updated);
+    });
 
-    persist(updated);
+    persist(updated, history);
     set({ championship: updated });
   },
 
   finishChampionship: () => {
-    const { championship } = get();
+    const { championship, history } = get();
     if (!championship) return;
 
-    const updated: Championship = {
+    const updated = withRanking({
       ...championship,
       status: 'finished',
-      ranking: recalculateRanking(championship),
-    };
+      finishedAt: new Date().toISOString(),
+    });
 
-    persist(updated);
+    persist(updated, history);
     set({ championship: updated });
   },
 }));

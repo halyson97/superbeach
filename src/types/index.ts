@@ -60,6 +60,7 @@ export interface Championship {
   rounds: Round[];
   ranking: RankingEntry[];
   status: ChampionshipStatus;
+  finishedAt?: string;
 }
 
 export interface NewGameFormData {
