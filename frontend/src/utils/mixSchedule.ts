@@ -2,7 +2,6 @@ import type { MatchCategory, Player, Round } from '../types';
 import {
   generateUniquePartnershipMatches,
   packScheduleIntoRounds,
-  selectMaxMatchesForRound,
 } from './roundRobin';
 
 type TaggedMatchDef = {
@@ -18,15 +17,91 @@ function tagMatches(
   return defs.map((def) => ({ ...def, category }));
 }
 
-function matchKey(m: TaggedMatchDef): string {
-  const side = (ids: string[]) => [...ids].sort().join('+');
-  return `${m.category}|${side(m.side1)}|${side(m.side2)}`;
+type GenderRoundBalance = {
+  playerIds: string[];
+  waitCounts: Map<string, number>;
+  lastWaiting: Set<string>;
+};
+
+function createBalanceState(playerIds: string[]): GenderRoundBalance {
+  return {
+    playerIds,
+    waitCounts: new Map(playerIds.map((id) => [id, 0])),
+    lastWaiting: new Set<string>(),
+  };
 }
 
-function removeFromQueue(queue: TaggedMatchDef[], match: TaggedMatchDef): void {
-  const key = matchKey(match);
-  const idx = queue.findIndex((m) => matchKey(m) === key);
-  if (idx >= 0) queue.splice(idx, 1);
+function pickBalancedMatch(
+  queue: TaggedMatchDef[],
+  state: GenderRoundBalance,
+): TaggedMatchDef | null {
+  if (queue.length === 0) return null;
+
+  let bestIndex = -1;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < queue.length; i++) {
+    const match = queue[i];
+    const playing = new Set([...match.side1, ...match.side2]);
+    const waiting = state.playerIds.filter((id) => !playing.has(id));
+
+    const repeatedWaiters = waiting.filter((id) =>
+      state.lastWaiting.has(id),
+    ).length;
+    const waitPenalty = waiting.reduce(
+      (sum, id) => sum + (state.waitCounts.get(id) ?? 0),
+      0,
+    );
+    const score = repeatedWaiters * 100 + waitPenalty;
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestIndex = i;
+    }
+  }
+
+  if (bestIndex < 0) return null;
+
+  const selected = queue[bestIndex];
+  const playing = new Set([...selected.side1, ...selected.side2]);
+  const waiting = state.playerIds.filter((id) => !playing.has(id));
+  for (const id of waiting) {
+    state.waitCounts.set(id, (state.waitCounts.get(id) ?? 0) + 1);
+  }
+  state.lastWaiting = new Set(waiting);
+  queue.splice(bestIndex, 1);
+  return selected;
+}
+
+function takeOneMFRound(
+  menQueue: TaggedMatchDef[],
+  womenQueue: TaggedMatchDef[],
+  courtCount: number,
+  menBalance: GenderRoundBalance,
+  womenBalance: GenderRoundBalance,
+): TaggedMatchDef[] {
+  if (courtCount <= 0) return [];
+
+  const batch: TaggedMatchDef[] = [];
+
+  const firstCategory =
+    menQueue.length >= womenQueue.length ? 'men' : 'women';
+
+  const firstMatch =
+    firstCategory === 'men'
+      ? pickBalancedMatch(menQueue, menBalance)
+      : pickBalancedMatch(womenQueue, womenBalance);
+  if (firstMatch) batch.push(firstMatch);
+
+  if (batch.length < courtCount) {
+    const secondMatch =
+      firstCategory === 'men'
+        ? pickBalancedMatch(womenQueue, womenBalance)
+        : pickBalancedMatch(menQueue, menBalance);
+    if (secondMatch) batch.push(secondMatch);
+  }
+
+  return batch;
 }
 
 function buildInterleavedPool(
@@ -40,26 +115,6 @@ function buildInterleavedPool(
     if (i < womenQueue.length) pool.push(womenQueue[i]);
   }
   return pool;
-}
-
-/** Extrai até uma rodada de partidas masculinas/femininas sem conflito de jogadores. */
-function takeOneMFRound(
-  menQueue: TaggedMatchDef[],
-  womenQueue: TaggedMatchDef[],
-  courtCount: number,
-): TaggedMatchDef[] {
-  if (menQueue.length === 0 && womenQueue.length === 0) return [];
-
-  const pool = buildInterleavedPool(menQueue, womenQueue);
-  const selected = selectMaxMatchesForRound(pool, courtCount);
-  const batch = selected.map((idx) => pool[idx]);
-
-  for (const match of batch) {
-    removeFromQueue(menQueue, match);
-    removeFromQueue(womenQueue, match);
-  }
-
-  return batch;
 }
 
 function renumberRounds(rounds: Round[]): Round[] {
@@ -127,21 +182,43 @@ export function generateMixSchedule(
     'women',
   );
   const mixedWaves = generateMixedWaves(menIds, womenIds);
+  const menBalance = createBalanceState(menIds);
+  const womenBalance = createBalanceState(womenIds);
 
   const segments: Round[] = [];
 
   for (const wave of mixedWaves) {
     segments.push(...packScheduleIntoRounds(wave, courtCount));
 
-    const mfRound = takeOneMFRound(menQueue, womenQueue, courtCount);
+    const mfRound = takeOneMFRound(
+      menQueue,
+      womenQueue,
+      courtCount,
+      menBalance,
+      womenBalance,
+    );
     if (mfRound.length > 0) {
       segments.push(...packScheduleIntoRounds(mfRound, courtCount));
     }
   }
 
   if (menQueue.length > 0 || womenQueue.length > 0) {
-    const remaining = buildInterleavedPool(menQueue, womenQueue);
-    segments.push(...packScheduleIntoRounds(remaining, courtCount));
+    while (menQueue.length > 0 || womenQueue.length > 0) {
+      const mfRound = takeOneMFRound(
+        menQueue,
+        womenQueue,
+        courtCount,
+        menBalance,
+        womenBalance,
+      );
+      if (mfRound.length === 0) break;
+      segments.push(...packScheduleIntoRounds(mfRound, courtCount));
+    }
+
+    if (menQueue.length > 0 || womenQueue.length > 0) {
+      const remaining = buildInterleavedPool(menQueue, womenQueue);
+      segments.push(...packScheduleIntoRounds(remaining, courtCount));
+    }
   }
 
   return renumberRounds(segments);

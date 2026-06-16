@@ -72,6 +72,10 @@ export function SharePage() {
     );
   }
 
+  const isFinished = championship.status === 'finished';
+  const shouldShowRanking =
+    isFinished || championship.ranking.some((entry) => entry.gamesPlayed > 0);
+
   return (
     <Layout title={championship.name} maxWidth="lg" showAuth={false}>
       <Stack spacing={{ xs: 2.5, sm: 3 }}>
@@ -100,11 +104,18 @@ export function SharePage() {
           />
         </Stack>
 
-        <RankingTable
-          championship={championship}
-          ranking={championship.ranking}
-          allowCriteriaChange={false}
-        />
+        {shouldShowRanking && (
+          <Stack spacing={1.25}>
+            <Typography variant="h6">
+              {isFinished ? 'Ranking final' : 'Ranking parcial'}
+            </Typography>
+            <RankingTable
+              championship={championship}
+              ranking={championship.ranking}
+              allowCriteriaChange={false}
+            />
+          </Stack>
+        )}
 
         <Typography variant="h6">Rodadas</Typography>
 
