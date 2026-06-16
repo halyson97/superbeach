@@ -48,7 +48,7 @@ function conflictsWithSelection(
 /**
  * Seleciona o maior conjunto de partidas sem conflito de jogadores (até courtCount).
  */
-function selectMaxMatchesForRound(
+export function selectMaxMatchesForRound(
   remaining: MatchDef[],
   courtCount: number,
 ): number[] {

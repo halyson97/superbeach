@@ -2,6 +2,7 @@ import type { MatchCategory, Player, Round } from '../types';
 import {
   generateUniquePartnershipMatches,
   packScheduleIntoRounds,
+  selectMaxMatchesForRound,
 } from './roundRobin';
 
 type TaggedMatchDef = {
@@ -15,6 +16,60 @@ function tagMatches(
   category: MatchCategory,
 ): TaggedMatchDef[] {
   return defs.map((def) => ({ ...def, category }));
+}
+
+function matchKey(m: TaggedMatchDef): string {
+  const side = (ids: string[]) => [...ids].sort().join('+');
+  return `${m.category}|${side(m.side1)}|${side(m.side2)}`;
+}
+
+function removeFromQueue(queue: TaggedMatchDef[], match: TaggedMatchDef): void {
+  const key = matchKey(match);
+  const idx = queue.findIndex((m) => matchKey(m) === key);
+  if (idx >= 0) queue.splice(idx, 1);
+}
+
+function buildInterleavedPool(
+  menQueue: TaggedMatchDef[],
+  womenQueue: TaggedMatchDef[],
+): TaggedMatchDef[] {
+  const pool: TaggedMatchDef[] = [];
+  const max = Math.max(menQueue.length, womenQueue.length);
+  for (let i = 0; i < max; i++) {
+    if (i < menQueue.length) pool.push(menQueue[i]);
+    if (i < womenQueue.length) pool.push(womenQueue[i]);
+  }
+  return pool;
+}
+
+/** Extrai até uma rodada de partidas masculinas/femininas sem conflito de jogadores. */
+function takeOneMFRound(
+  menQueue: TaggedMatchDef[],
+  womenQueue: TaggedMatchDef[],
+  courtCount: number,
+): TaggedMatchDef[] {
+  if (menQueue.length === 0 && womenQueue.length === 0) return [];
+
+  const pool = buildInterleavedPool(menQueue, womenQueue);
+  const selected = selectMaxMatchesForRound(pool, courtCount);
+  const batch = selected.map((idx) => pool[idx]);
+
+  for (const match of batch) {
+    removeFromQueue(menQueue, match);
+    removeFromQueue(womenQueue, match);
+  }
+
+  return batch;
+}
+
+function renumberRounds(rounds: Round[]): Round[] {
+  return rounds.map((round, index) => ({
+    number: index + 1,
+    matches: round.matches.map((match) => ({
+      ...match,
+      roundNumber: index + 1,
+    })),
+  }));
 }
 
 /**
@@ -63,29 +118,33 @@ export function generateMixSchedule(
     .filter((p) => p.gender === 'female')
     .map((p) => p.id);
 
-  const menMatches = tagMatches(
+  const menQueue = tagMatches(
     generateUniquePartnershipMatches(menIds),
     'men',
   );
-  const womenMatches = tagMatches(
+  const womenQueue = tagMatches(
     generateUniquePartnershipMatches(womenIds),
     'women',
   );
   const mixedWaves = generateMixedWaves(menIds, womenIds);
 
-  // Ondas mistas primeiro (preenchem todas as quadras), depois masculino/feminino intercalado
-  const combined: TaggedMatchDef[] = [];
+  const segments: Round[] = [];
+
   for (const wave of mixedWaves) {
-    combined.push(...wave);
+    segments.push(...packScheduleIntoRounds(wave, courtCount));
+
+    const mfRound = takeOneMFRound(menQueue, womenQueue, courtCount);
+    if (mfRound.length > 0) {
+      segments.push(...packScheduleIntoRounds(mfRound, courtCount));
+    }
   }
 
-  const maxSame = Math.max(menMatches.length, womenMatches.length);
-  for (let i = 0; i < maxSame; i++) {
-    if (i < menMatches.length) combined.push(menMatches[i]);
-    if (i < womenMatches.length) combined.push(womenMatches[i]);
+  if (menQueue.length > 0 || womenQueue.length > 0) {
+    const remaining = buildInterleavedPool(menQueue, womenQueue);
+    segments.push(...packScheduleIntoRounds(remaining, courtCount));
   }
 
-  return packScheduleIntoRounds(combined, courtCount);
+  return renumberRounds(segments);
 }
 
 export function countUniquePartnershipMatches(groupSize: number): number {
@@ -112,13 +171,23 @@ export function partnershipKey(a: string, b: string): string {
 }
 
 export function hasDuplicatePartnerships(
-  matches: { side1: string[]; side2: string[]; category?: MatchCategory }[],
+  matches: {
+    side1?: string[];
+    side2?: string[];
+    side1Ids?: string[];
+    side2Ids?: string[];
+    category?: MatchCategory;
+  }[],
   category: MatchCategory,
 ): boolean {
   const seen = new Set<string>();
 
   for (const match of matches.filter((m) => m.category === category)) {
-    for (const side of [match.side1, match.side2]) {
+    for (const side of [
+      match.side1 ?? match.side1Ids,
+      match.side2 ?? match.side2Ids,
+    ]) {
+      if (!side?.[0] || !side?.[1]) continue;
       const key = partnershipKey(side[0], side[1]);
       if (seen.has(key)) return true;
       seen.add(key);
@@ -126,4 +195,9 @@ export function hasDuplicatePartnerships(
   }
 
   return false;
+}
+
+/** Retorna categorias presentes em cada rodada (útil para testes). */
+export function getRoundCategoryPattern(rounds: Round[]): MatchCategory[][] {
+  return rounds.map((round) => round.matches.map((m) => m.category!));
 }
