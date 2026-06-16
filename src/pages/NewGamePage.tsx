@@ -23,17 +23,29 @@ import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { useChampionshipStore } from '../store/championshipStore';
-import type { ClassificationCriteria, GameType } from '../types';
+import type { ClassificationCriteria, GameType, PlayerGender } from '../types';
 
 const PLAYER_COUNT_OPTIONS = [6, 8, 12, 16];
+const MIX_PLAYER_COUNT_OPTIONS = [8, 12, 16];
 const COURT_COUNT_OPTIONS = [1, 2, 3, 4];
+
+function createDefaultPlayers(count: number, isMix: boolean) {
+  return Array.from({ length: count }, (_, index) => ({
+    name: '',
+    gender: (isMix
+      ? index < count / 2
+        ? 'male'
+        : 'female'
+      : 'male') as PlayerGender,
+  }));
+}
 
 interface FormValues {
   gameType: GameType;
   playerCount: number;
   courtCount: number;
   classificationCriteria: ClassificationCriteria;
-  players: { name: string }[];
+  players: { name: string; gender: PlayerGender }[];
   pairs: { player1: string; player2: string }[];
 }
 
@@ -52,7 +64,7 @@ export function NewGamePage() {
         playerCount: 8,
         courtCount: 2,
         classificationCriteria: 'wins',
-        players: Array.from({ length: 8 }, () => ({ name: '' })),
+        players: createDefaultPlayers(8, false),
         pairs: Array.from({ length: 4 }, () => ({ player1: '', player2: '' })),
       },
     });
@@ -66,9 +78,12 @@ export function NewGamePage() {
     name: 'pairs',
   });
 
+  const isMix = gameType === 'mix';
+  const playerCountOptions = isMix ? MIX_PLAYER_COUNT_OPTIONS : PLAYER_COUNT_OPTIONS;
+
   const handlePlayerCountChange = (count: number) => {
     setValue('playerCount', count);
-    replace(Array.from({ length: count }, () => ({ name: '' })));
+    replace(createDefaultPlayers(count, isMix));
     if (gameType === 'fixed_double') {
       replacePairs(
         Array.from({ length: count / 2 }, () => ({ player1: '', player2: '' })),
@@ -78,6 +93,16 @@ export function NewGamePage() {
 
   const handleGameTypeChange = (type: GameType) => {
     setValue('gameType', type);
+
+    if (type === 'mix') {
+      const count = playerCount < 8 ? 8 : playerCount;
+      setValue('playerCount', count);
+      replace(createDefaultPlayers(count, true));
+      return;
+    }
+
+    replace(createDefaultPlayers(playerCount, false));
+
     if (type === 'fixed_double') {
       replacePairs(
         Array.from({ length: playerCount / 2 }, () => ({
@@ -107,6 +132,20 @@ export function NewGamePage() {
     if (players.length !== playerCount) {
       setFormError('A quantidade de nomes deve coincidir com a selecionada.');
       return false;
+    }
+
+    if (gameType === 'mix') {
+      const genders = getValues('players').map((p) => p.gender);
+      const maleCount = genders.filter((g) => g === 'male').length;
+      const femaleCount = genders.filter((g) => g === 'female').length;
+      const expected = playerCount / 2;
+
+      if (maleCount !== expected || femaleCount !== expected) {
+        setFormError(
+          `O Mix exige ${expected} homens e ${expected} mulheres.`,
+        );
+        return false;
+      }
     }
 
     setFormError('');
@@ -182,6 +221,10 @@ export function NewGamePage() {
       courtCount: data.courtCount,
       classificationCriteria: data.classificationCriteria,
       playerNames: data.players.map((p) => p.name.trim()),
+      playerGenders:
+        data.gameType === 'mix'
+          ? data.players.map((p) => p.gender)
+          : undefined,
       pairs:
         data.gameType === 'fixed_double'
           ? data.pairs.map((p) => [p.player1, p.player2] as [string, string])
@@ -239,6 +282,11 @@ export function NewGamePage() {
                         control={<Radio />}
                         label="Dupla Fixa"
                       />
+                      <FormControlLabel
+                        value="mix"
+                        control={<Radio />}
+                        label="Mix (homens, mulheres e misto)"
+                      />
                     </RadioGroup>
                   )}
                 />
@@ -256,7 +304,7 @@ export function NewGamePage() {
                         handlePlayerCountChange(Number(e.target.value))
                       }
                     >
-                      {PLAYER_COUNT_OPTIONS.map((count) => (
+                      {playerCountOptions.map((count) => (
                         <MenuItem key={count} value={count}>
                           {count} jogadores
                         </MenuItem>
@@ -264,6 +312,11 @@ export function NewGamePage() {
                     </Select>
                   )}
                 />
+                {isMix && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    Metade homens, metade mulheres. Mínimo 8 jogadores.
+                  </Typography>
+                )}
               </FormControl>
 
               <FormControl fullWidth>
@@ -317,23 +370,51 @@ export function NewGamePage() {
             <Typography variant="h6" gutterBottom>
               Cadastro dos Jogadores
             </Typography>
+            {isMix && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Cadastre {playerCount / 2} homens e {playerCount / 2} mulheres.
+              </Typography>
+            )}
             <Stack spacing={2}>
               {fields.map((field, index) => (
-                <Controller
+                <Box
                   key={field.id}
-                  name={`players.${index}.name`}
-                  control={control}
-                  rules={{ required: 'Nome obrigatório' }}
-                  render={({ field: inputField, fieldState }) => (
-                    <TextField
-                      {...inputField}
-                      label={`Jogador ${index + 1}`}
-                      fullWidth
-                      error={!!fieldState.error}
-                      helperText={fieldState.error?.message}
+                  sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}
+                >
+                  <Controller
+                    name={`players.${index}.name`}
+                    control={control}
+                    rules={{ required: 'Nome obrigatório' }}
+                    render={({ field: inputField, fieldState }) => (
+                      <TextField
+                        {...inputField}
+                        label={
+                          isMix
+                            ? `Jogador ${index + 1}`
+                            : `Jogador ${index + 1}`
+                        }
+                        sx={{ flex: 1, minWidth: 160 }}
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message}
+                      />
+                    )}
+                  />
+                  {isMix && (
+                    <Controller
+                      name={`players.${index}.gender`}
+                      control={control}
+                      render={({ field: genderField }) => (
+                        <FormControl sx={{ minWidth: 140 }}>
+                          <FormLabel>Gênero</FormLabel>
+                          <Select {...genderField}>
+                            <MenuItem value="male">Homem</MenuItem>
+                            <MenuItem value="female">Mulher</MenuItem>
+                          </Select>
+                        </FormControl>
+                      )}
                     />
                   )}
-                />
+                </Box>
               ))}
             </Stack>
           </Paper>

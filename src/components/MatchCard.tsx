@@ -6,13 +6,19 @@ import {
   Button,
   Box,
 } from '@mui/material';
-import type { Match, Player } from '../types';
+import type { Match, MatchCategory, Player } from '../types';
 import { formatSideNames } from '../utils/ranking';
 
 const STATUS_LABELS: Record<Match['status'], { label: string; color: 'default' | 'warning' | 'success' }> = {
   not_started: { label: 'Não iniciada', color: 'default' },
   in_progress: { label: 'Em andamento', color: 'warning' },
   finished: { label: 'Finalizada', color: 'success' },
+};
+
+const CATEGORY_LABELS: Record<MatchCategory, string> = {
+  men: 'Masculino',
+  women: 'Feminino',
+  mixed: 'Misto',
 };
 
 interface MatchCardProps {
@@ -34,7 +40,16 @@ export function MatchCard({ match, players, onInformResult, onEditResult }: Matc
           direction="row"
           sx={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}
         >
-          <Chip label={`Quadra ${match.court}`} size="small" color="primary" variant="outlined" />
+          <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
+            <Chip label={`Quadra ${match.court}`} size="small" color="primary" variant="outlined" />
+            {match.category && (
+              <Chip
+                label={CATEGORY_LABELS[match.category]}
+                size="small"
+                variant="outlined"
+              />
+            )}
+          </Stack>
           <Chip label={statusInfo.label} size="small" color={statusInfo.color} />
         </Stack>
 

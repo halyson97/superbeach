@@ -91,7 +91,11 @@ export function TournamentPage() {
             {championship.name}
           </Typography>
           <Typography color="text.secondary">
-            {championship.gameType === 'individual' ? 'Individual' : 'Dupla Fixa'}{' '}
+            {championship.gameType === 'individual'
+              ? 'Individual'
+              : championship.gameType === 'fixed_double'
+                ? 'Dupla Fixa'
+                : 'Mix'}{' '}
             · {championship.playerCount} jogadores · {championship.courtCount}{' '}
             {championship.courtCount === 1 ? 'quadra' : 'quadras'}
           </Typography>

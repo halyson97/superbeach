@@ -3,6 +3,7 @@ import type {
   Championship,
   NewGameFormData,
   Player,
+  PlayerGender,
   Team,
 } from '../types';
 import { generateId } from '../utils/id';
@@ -10,6 +11,7 @@ import {
   generateDoublesSchedule,
   generateIndividualSchedule,
 } from '../utils/roundRobin';
+import { generateMixSchedule } from '../utils/mixSchedule';
 import { recalculateRanking } from '../utils/ranking';
 import { clearChampionship, loadChampionship, saveChampionship } from '../services/storage';
 
@@ -38,8 +40,15 @@ function formatChampionshipName(date: Date): string {
   })}`;
 }
 
-function buildPlayers(names: string[]): Player[] {
-  return names.map((name) => ({ id: generateId(), name: name.trim() }));
+function buildPlayers(
+  names: string[],
+  genders?: PlayerGender[],
+): Player[] {
+  return names.map((name, index) => ({
+    id: generateId(),
+    name: name.trim(),
+    ...(genders ? { gender: genders[index] } : {}),
+  }));
 }
 
 function buildTeams(players: Player[], pairs: [string, string][]): Team[] {
@@ -71,7 +80,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
 
   createChampionship: (data) => {
     const createdAt = new Date().toISOString();
-    const players = buildPlayers(data.playerNames);
+    const players = buildPlayers(data.playerNames, data.playerGenders);
 
     let teams: Team[] | undefined;
     let rounds;
@@ -79,6 +88,8 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     if (data.gameType === 'fixed_double' && data.pairs) {
       teams = buildTeams(players, data.pairs);
       rounds = generateDoublesSchedule(teams, data.courtCount);
+    } else if (data.gameType === 'mix') {
+      rounds = generateMixSchedule(players, data.courtCount);
     } else {
       rounds = generateIndividualSchedule(players, data.courtCount);
     }

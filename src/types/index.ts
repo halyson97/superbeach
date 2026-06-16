@@ -1,11 +1,14 @@
-export type GameType = 'individual' | 'fixed_double';
+export type GameType = 'individual' | 'fixed_double' | 'mix';
 export type ClassificationCriteria = 'wins' | 'points';
 export type MatchStatus = 'not_started' | 'in_progress' | 'finished';
 export type ChampionshipStatus = 'active' | 'finished';
+export type PlayerGender = 'male' | 'female';
+export type MatchCategory = 'men' | 'women' | 'mixed';
 
 export interface Player {
   id: string;
   name: string;
+  gender?: PlayerGender;
 }
 
 export interface Team {
@@ -24,6 +27,7 @@ export interface Match {
   side2Ids: string[];
   score1?: number;
   score2?: number;
+  category?: MatchCategory;
 }
 
 export interface Round {
@@ -64,5 +68,6 @@ export interface NewGameFormData {
   courtCount: number;
   classificationCriteria: ClassificationCriteria;
   playerNames: string[];
+  playerGenders?: PlayerGender[];
   pairs?: [string, string][];
 }

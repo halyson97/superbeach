@@ -1,9 +1,10 @@
-import type { Match, Player, Round, Team } from '../types';
+import type { Match, MatchCategory, Player, Round, Team } from '../types';
 import { generateId } from './id';
 
 type MatchDef = {
   side1: string[];
   side2: string[];
+  category?: MatchCategory;
 };
 
 function createMatch(
@@ -11,6 +12,7 @@ function createMatch(
   side2Ids: string[],
   roundNumber: number,
   court: number,
+  category?: MatchCategory,
 ): Match {
   return {
     id: generateId(),
@@ -19,12 +21,71 @@ function createMatch(
     status: 'not_started',
     side1Ids,
     side2Ids,
+    category,
   };
 }
 
+function partnershipKey(a: string, b: string): string {
+  return [a, b].sort().join('|');
+}
+
+function getMatchPlayers(game: MatchDef): string[] {
+  return [...game.side1, ...game.side2];
+}
+
+function conflictsWithSelection(
+  selected: number[],
+  candidate: number,
+  remaining: MatchDef[],
+): boolean {
+  const busy = new Set<string>();
+  for (const idx of selected) {
+    getMatchPlayers(remaining[idx]).forEach((id) => busy.add(id));
+  }
+  return getMatchPlayers(remaining[candidate]).some((id) => busy.has(id));
+}
+
 /**
- * Agrupa partidas em rodadas com exatamente `courtCount` jogos cada.
- * Cada quadra recebe uma partida (4 jogadores = duas duplas).
+ * Seleciona o maior conjunto de partidas sem conflito de jogadores (até courtCount).
+ */
+function selectMaxMatchesForRound(
+  remaining: MatchDef[],
+  courtCount: number,
+): number[] {
+  let best: number[] = [];
+
+  function search(start: number, selected: number[]) {
+    if (selected.length > best.length) {
+      best = [...selected];
+    }
+    if (selected.length >= courtCount) return;
+
+    for (let i = start; i < remaining.length; i++) {
+      if (conflictsWithSelection(selected, i, remaining)) continue;
+      search(i + 1, [...selected, i]);
+    }
+  }
+
+  search(0, []);
+  return best;
+}
+
+function sortRemainingForPacking(remaining: MatchDef[]): void {
+  const frequency = new Map<string, number>();
+  for (const game of remaining) {
+    for (const id of getMatchPlayers(game)) {
+      frequency.set(id, (frequency.get(id) ?? 0) + 1);
+    }
+  }
+
+  const bottleneck = (game: MatchDef) =>
+    Math.min(...getMatchPlayers(game).map((id) => frequency.get(id) ?? 0));
+
+  remaining.sort((a, b) => bottleneck(a) - bottleneck(b));
+}
+
+/**
+ * Agrupa partidas em rodadas otimizando o uso das quadras.
  * Nenhum jogador disputa duas partidas na mesma rodada.
  */
 function packScheduleIntoRounds(
@@ -36,40 +97,27 @@ function packScheduleIntoRounds(
   let roundNumber = 1;
 
   while (remaining.length > 0) {
-    const roundMatches: Match[] = [];
-    const usedIndices: number[] = [];
-    const busyPlayers = new Set<string>();
+    sortRemainingForPacking(remaining);
 
-    for (
-      let i = 0;
-      i < remaining.length && roundMatches.length < courtCount;
-      i++
-    ) {
-      const game = remaining[i];
-      const players = [...game.side1, ...game.side2];
+    let selected = selectMaxMatchesForRound(remaining, courtCount);
 
-      if (players.some((id) => busyPlayers.has(id))) continue;
-
-      roundMatches.push(
-        createMatch(
-          game.side1,
-          game.side2,
-          roundNumber,
-          roundMatches.length + 1,
-        ),
-      );
-      players.forEach((id) => busyPlayers.add(id));
-      usedIndices.push(i);
+    if (selected.length === 0) {
+      selected = [0];
     }
 
-    for (let i = usedIndices.length - 1; i >= 0; i--) {
-      remaining.splice(usedIndices[i], 1);
-    }
+    const roundMatches = selected.map((idx, courtIdx) =>
+      createMatch(
+        remaining[idx].side1,
+        remaining[idx].side2,
+        roundNumber,
+        courtIdx + 1,
+        remaining[idx].category,
+      ),
+    );
 
-    if (roundMatches.length === 0) {
-      const game = remaining.shift()!;
-      roundMatches.push(createMatch(game.side1, game.side2, roundNumber, 1));
-    }
+    selected
+      .sort((a, b) => b - a)
+      .forEach((idx) => remaining.splice(idx, 1));
 
     rounds.push({ number: roundNumber, matches: roundMatches });
     roundNumber++;
@@ -208,6 +256,105 @@ function buildScheduleGreedy(playerIds: string[]): MatchDef[] {
   return matches;
 }
 
+const SIX_PLAYER_UNIQUE: [number, number, number, number][] = [
+  [0, 1, 2, 3],
+  [0, 2, 1, 3],
+  [0, 3, 1, 2],
+  [0, 4, 1, 5],
+  [0, 5, 2, 4],
+  [2, 5, 3, 4],
+  [1, 4, 3, 5],
+];
+
+function buildSixPlayerUniqueMatchDefs(playerIds: string[]): MatchDef[] {
+  return SIX_PLAYER_UNIQUE.map(([a, b, c, d]) => ({
+    side1: [playerIds[a], playerIds[b]],
+    side2: [playerIds[c], playerIds[d]],
+  }));
+}
+
+function packPartnershipsGreedy(playerIds: string[]): MatchDef[] {
+  const partnerships: [string, string][] = [];
+  for (let i = 0; i < playerIds.length; i++) {
+    for (let j = i + 1; j < playerIds.length; j++) {
+      partnerships.push([playerIds[i], playerIds[j]]);
+    }
+  }
+
+  const used = new Set<string>();
+  const matches: MatchDef[] = [];
+  let found = true;
+
+  while (found) {
+    found = false;
+
+    for (let i = 0; i < partnerships.length; i++) {
+      const p1 = partnerships[i];
+      const k1 = partnershipKey(p1[0], p1[1]);
+      if (used.has(k1)) continue;
+
+      for (let j = i + 1; j < partnerships.length; j++) {
+        const p2 = partnerships[j];
+        const k2 = partnershipKey(p2[0], p2[1]);
+        if (used.has(k2)) continue;
+
+        const players = new Set([p1[0], p1[1], p2[0], p2[1]]);
+        if (players.size !== 4) continue;
+
+        matches.push({ side1: p1, side2: p2 });
+        used.add(k1);
+        used.add(k2);
+        found = true;
+        break;
+      }
+
+      if (found) break;
+    }
+  }
+
+  return matches;
+}
+
+/**
+ * Gera partidas sem repetir parcerias (duplas) no mesmo grupo.
+ */
+export function generateUniquePartnershipMatches(
+  playerIds: string[],
+): MatchDef[] {
+  const n = playerIds.length;
+  if (n < 4) return [];
+
+  if (n % 4 === 0) {
+    return factorsToMatchDefs(oneFactorization(playerIds));
+  }
+
+  if (n === 6) {
+    return buildSixPlayerUniqueMatchDefs(playerIds);
+  }
+
+  return packPartnershipsGreedy(playerIds);
+}
+
+/**
+ * Duplas rotativas entre um grupo de jogadores (sem empacotar em rodadas).
+ * Permite repetir parcerias quando necessário (ex.: 6 jogadores).
+ */
+export function generateRotatingPartnersMatchDefs(
+  playerIds: string[],
+): MatchDef[] {
+  const n = playerIds.length;
+
+  if (n % 4 === 0) {
+    return factorsToMatchDefs(oneFactorization(playerIds));
+  }
+
+  if (n === 6) {
+    return buildSixPlayerMatchDefs(playerIds);
+  }
+
+  return buildScheduleGreedy(playerIds);
+}
+
 /**
  * Individual: duplas rotativas — cada jogador joga uma vez com cada parceiro.
  */
@@ -216,20 +363,11 @@ export function generateIndividualSchedule(
   courtCount: number,
 ): Round[] {
   const playerIds = players.map((p) => p.id);
-  const n = playerIds.length;
-
-  let matchDefs: MatchDef[];
-
-  if (n % 4 === 0) {
-    matchDefs = factorsToMatchDefs(oneFactorization(playerIds));
-  } else if (n === 6) {
-    matchDefs = buildSixPlayerMatchDefs(playerIds);
-  } else {
-    matchDefs = buildScheduleGreedy(playerIds);
-  }
-
+  const matchDefs = generateRotatingPartnersMatchDefs(playerIds);
   return packScheduleIntoRounds(matchDefs, courtCount);
 }
+
+export { packScheduleIntoRounds };
 
 function collectTeamRoundRobinMatches(
   teamIds: string[],
