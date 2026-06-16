@@ -13,7 +13,7 @@ import { useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { RankingTable } from '../components/RankingTable';
 import { useChampionshipStore } from '../store/championshipStore';
-import { getPlayerName } from '../utils/ranking';
+import { getRankingEntryName } from '../utils/ranking';
 
 const PODIUM_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 const PODIUM_LABELS = ['1º Lugar', '2º Lugar', '3º Lugar'];
@@ -49,7 +49,7 @@ export function FinalPage() {
             Campeonato Finalizado!
           </Typography>
           <Typography variant="h5" color="primary" sx={{ fontWeight: 600 }}>
-            Campeão: {getPlayerName(championship.players, champion.playerId)}
+            Campeão: {getRankingEntryName(championship, champion)}
           </Typography>
         </Box>
 
@@ -73,7 +73,7 @@ export function FinalPage() {
                   {PODIUM_LABELS[index]}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {getPlayerName(championship.players, entry.playerId)}
+                  {getRankingEntryName(championship, entry)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {championship.classificationCriteria === 'points'

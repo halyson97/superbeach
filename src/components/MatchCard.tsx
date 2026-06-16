@@ -19,9 +19,10 @@ interface MatchCardProps {
   match: Match;
   players: Player[];
   onInformResult: (matchId: string) => void;
+  onEditResult: (matchId: string) => void;
 }
 
-export function MatchCard({ match, players, onInformResult }: MatchCardProps) {
+export function MatchCard({ match, players, onInformResult, onEditResult }: MatchCardProps) {
   const statusInfo = STATUS_LABELS[match.status];
   const side1 = formatSideNames(match.side1Ids, players);
   const side2 = formatSideNames(match.side2Ids, players);
@@ -50,9 +51,19 @@ export function MatchCard({ match, players, onInformResult }: MatchCardProps) {
         </Box>
 
         {match.status === 'finished' && match.score1 !== undefined && match.score2 !== undefined && (
-          <Typography variant="h6" color="primary">
-            {match.score1} x {match.score2}
-          </Typography>
+          <>
+            <Typography variant="h6" color="primary">
+              {match.score1} x {match.score2}
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => onEditResult(match.id)}
+              fullWidth
+            >
+              Editar Resultado
+            </Button>
+          </>
         )}
 
         {match.status !== 'finished' && (

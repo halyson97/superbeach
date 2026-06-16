@@ -10,7 +10,7 @@ import {
   generateDoublesSchedule,
   generateIndividualSchedule,
 } from '../utils/roundRobin';
-import { createInitialRanking, recalculateRanking } from '../utils/ranking';
+import { recalculateRanking } from '../utils/ranking';
 import { clearChampionship, loadChampionship, saveChampionship } from '../services/storage';
 
 interface ChampionshipStore {
@@ -20,6 +20,7 @@ interface ChampionshipStore {
   deleteChampionship: () => void;
   startMatch: (matchId: string) => void;
   submitResult: (matchId: string, score1: number, score2: number) => void;
+  updateClassificationCriteria: (criteria: Championship['classificationCriteria']) => void;
   finishChampionship: () => void;
 }
 
@@ -62,6 +63,8 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
   hydrate: () => {
     const saved = loadChampionship();
     if (saved) {
+      saved.ranking = recalculateRanking(saved);
+      saveChampionship(saved);
       set({ championship: saved });
     }
   },
@@ -91,7 +94,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       players,
       teams,
       rounds,
-      ranking: createInitialRanking(players),
+      ranking: [],
       status: 'active',
     };
 
@@ -147,6 +150,20 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     };
 
     updated.ranking = recalculateRanking(updated);
+    persist(updated);
+    set({ championship: updated });
+  },
+
+  updateClassificationCriteria: (criteria) => {
+    const { championship } = get();
+    if (!championship) return;
+
+    const updated: Championship = {
+      ...championship,
+      classificationCriteria: criteria,
+    };
+    updated.ranking = recalculateRanking(updated);
+
     persist(updated);
     set({ championship: updated });
   },

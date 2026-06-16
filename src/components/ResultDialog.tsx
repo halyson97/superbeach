@@ -8,6 +8,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Match, Player } from '../types';
 import { formatSideNames } from '../utils/ranking';
@@ -39,10 +40,21 @@ export function ResultDialog({
     formState: { errors },
   } = useForm<ResultForm>();
 
+  useEffect(() => {
+    if (open && match) {
+      reset({
+        score1: match.score1 ?? ('' as unknown as number),
+        score2: match.score2 ?? ('' as unknown as number),
+      });
+    }
+  }, [open, match, reset]);
+
   if (!match) return null;
 
   const side1 = formatSideNames(match.side1Ids, players);
   const side2 = formatSideNames(match.side2Ids, players);
+
+  const isEditing = match.status === 'finished';
 
   const handleClose = () => {
     reset();
@@ -57,7 +69,7 @@ export function ResultDialog({
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
-      <DialogTitle>Informar Resultado</DialogTitle>
+      <DialogTitle>{isEditing ? 'Editar Resultado' : 'Informar Resultado'}</DialogTitle>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <DialogContent>
           <Stack spacing={2}>
@@ -69,10 +81,10 @@ export function ResultDialog({
               label={side1}
               type="number"
               fullWidth
-              slotProps={{ htmlInput: { min: 1 } }}
+              slotProps={{ htmlInput: { min: 0 } }}
               {...register('score1', {
                 required: 'Informe os games',
-                min: { value: 1, message: 'Deve ser um número positivo' },
+                min: { value: 0, message: 'Não pode ser negativo' },
                 validate: (value, formValues) => {
                   const s1 = Number(value);
                   const s2 = Number(formValues.score2);
@@ -88,10 +100,10 @@ export function ResultDialog({
               label={side2}
               type="number"
               fullWidth
-              slotProps={{ htmlInput: { min: 1 } }}
+              slotProps={{ htmlInput: { min: 0 } }}
               {...register('score2', {
                 required: 'Informe os games',
-                min: { value: 1, message: 'Deve ser um número positivo' },
+                min: { value: 0, message: 'Não pode ser negativo' },
                 validate: (value, formValues) => {
                   const s1 = Number(formValues.score1);
                   const s2 = Number(value);

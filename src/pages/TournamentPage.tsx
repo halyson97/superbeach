@@ -1,7 +1,4 @@
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Box,
   Button,
   Stack,
@@ -12,7 +9,6 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { useNavigate } from 'react-router-dom';
@@ -59,6 +55,15 @@ export function TournamentPage() {
     }
   };
 
+  const handleEditResult = (matchId: string) => {
+    const match = championship.rounds
+      .flatMap((r) => r.matches)
+      .find((m) => m.id === matchId);
+    if (match) {
+      setSelectedMatch(match);
+    }
+  };
+
   const handleSubmitResult = (matchId: string, score1: number, score2: number) => {
     submitResult(matchId, score1, score2);
     setSelectedMatch(null);
@@ -100,36 +105,33 @@ export function TournamentPage() {
         <Typography variant="h6">Rodadas</Typography>
 
         {championship.rounds.map((round) => (
-          <Accordion key={round.number} defaultExpanded={round.number === 1}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography sx={{ fontWeight: 600 }}>
-                Rodada {round.number} ({round.matches.length}{' '}
-                {round.matches.length === 1 ? 'partida' : 'partidas'})
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: {
-                    xs: '1fr',
-                    sm: 'repeat(2, 1fr)',
-                    md: 'repeat(3, 1fr)',
-                  },
-                  gap: 2,
-                }}
-              >
-                {round.matches.map((match) => (
-                  <MatchCard
-                    key={match.id}
-                    match={match}
-                    players={championship.players}
-                    onInformResult={handleInformResult}
-                  />
-                ))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
+          <Box key={round.number}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
+              Rodada {round.number} ({round.matches.length}{' '}
+              {round.matches.length === 1 ? 'partida' : 'partidas'})
+            </Typography>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(3, 1fr)',
+                },
+                gap: 2,
+              }}
+            >
+              {round.matches.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  players={championship.players}
+                  onInformResult={handleInformResult}
+                  onEditResult={handleEditResult}
+                />
+              ))}
+            </Box>
+          </Box>
         ))}
 
         {canFinish && (
