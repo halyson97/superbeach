@@ -242,7 +242,7 @@ export function NewGamePage() {
     gameType === 'fixed_double' ? STEPS : STEPS.slice(0, 2);
 
   return (
-    <Layout title="Novo Campeonato" maxWidth="md">
+    <Layout title="Novo Jogo" maxWidth="md">
       <Stack spacing={{ xs: 2.5, sm: 3 }}>
         <Button
           startIcon={<ArrowBackIcon />}
@@ -253,8 +253,8 @@ export function NewGamePage() {
         </Button>
 
         <PageHeader
-          title="Novo Campeonato"
-          subtitle="Configure o torneio e cadastre os jogadores"
+          title="Novo Jogo"
+          subtitle="Configure o jogo e cadastre os jogadores"
         />
 
         <Stepper
@@ -441,7 +441,7 @@ export function NewGamePage() {
               Formação das Duplas
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Defina as duplas fixas para o campeonato.
+              Defina as duplas fixas para o jogo.
             </Typography>
             <Stack spacing={2}>
               {pairFields.map((field, index) => {
@@ -511,7 +511,7 @@ export function NewGamePage() {
             </Button>
           )}
           <Button variant="contained" onClick={handleNext} fullWidth={isMobile}>
-            {activeStep === steps.length - 1 ? 'Iniciar Campeonato' : 'Próximo'}
+            {activeStep === steps.length - 1 ? 'Iniciar Jogo' : 'Próximo'}
           </Button>
         </Stack>
       </Stack>

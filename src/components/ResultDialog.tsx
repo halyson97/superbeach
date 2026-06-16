@@ -7,11 +7,14 @@ import {
   TextField,
   Stack,
   Typography,
+  Box,
+  alpha,
 } from '@mui/material';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Match, Player } from '../types';
 import { formatSideNames } from '../utils/ranking';
+import { dialogActionsSx } from './ConfirmDialog';
 
 interface ResultForm {
   score1: number;
@@ -68,7 +71,7 @@ export function ResultDialog({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
+    <Dialog open={open} onClose={handleClose} maxWidth="xs">
       <DialogTitle>{isEditing ? 'Editar Resultado' : 'Informar Resultado'}</DialogTitle>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <DialogContent>
@@ -77,50 +80,86 @@ export function ResultDialog({
               Rodada {match.roundNumber} · Quadra {match.court}
             </Typography>
 
-            <TextField
-              label={side1}
-              type="number"
-              fullWidth
-              slotProps={{ htmlInput: { min: 0 } }}
-              {...register('score1', {
-                required: 'Informe os games',
-                min: { value: 0, message: 'Não pode ser negativo' },
-                validate: (value, formValues) => {
-                  const s1 = Number(value);
-                  const s2 = Number(formValues.score2);
-                  if (!isNaN(s2) && s1 === s2) return 'Não é permitido empate';
-                  return true;
-                },
-              })}
-              error={!!errors.score1}
-              helperText={errors.score1?.message}
-            />
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '1fr auto 1fr',
+                alignItems: 'start',
+                gap: 1.5,
+              }}
+            >
+              <TextField
+                label={side1}
+                type="number"
+                fullWidth
+                size="small"
+                slotProps={{ htmlInput: { min: 0 } }}
+                {...register('score1', {
+                  required: 'Informe os games',
+                  min: { value: 0, message: 'Não pode ser negativo' },
+                  validate: (value, formValues) => {
+                    const s1 = Number(value);
+                    const s2 = Number(formValues.score2);
+                    if (!isNaN(s2) && s1 === s2) return 'Não é permitido empate';
+                    return true;
+                  },
+                })}
+                error={!!errors.score1}
+                helperText={errors.score1?.message}
+              />
 
-            <TextField
-              label={side2}
-              type="number"
-              fullWidth
-              slotProps={{ htmlInput: { min: 0 } }}
-              {...register('score2', {
-                required: 'Informe os games',
-                min: { value: 0, message: 'Não pode ser negativo' },
-                validate: (value, formValues) => {
-                  const s1 = Number(formValues.score1);
-                  const s2 = Number(value);
-                  if (!isNaN(s1) && s1 === s2) return 'Não é permitido empate';
-                  return true;
-                },
-              })}
-              error={!!errors.score2}
-              helperText={errors.score2?.message}
-            />
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  pt: 1.25,
+                  fontWeight: 700,
+                  alignSelf: 'start',
+                }}
+              >
+                ×
+              </Typography>
+
+              <TextField
+                label={side2}
+                type="number"
+                fullWidth
+                size="small"
+                slotProps={{ htmlInput: { min: 0 } }}
+                {...register('score2', {
+                  required: 'Informe os games',
+                  min: { value: 0, message: 'Não pode ser negativo' },
+                  validate: (value, formValues) => {
+                    const s1 = Number(formValues.score1);
+                    const s2 = Number(value);
+                    if (!isNaN(s1) && s1 === s2) return 'Não é permitido empate';
+                    return true;
+                  },
+                })}
+                error={!!errors.score2}
+                helperText={errors.score2?.message}
+              />
+            </Box>
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                display: 'block',
+                textAlign: 'center',
+                px: 1,
+                py: 0.75,
+                borderRadius: 1.5,
+                bgcolor: alpha('#0891B2', 0.06),
+              }}
+            >
+              {side1} vs {side2}
+            </Typography>
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, flexDirection: { xs: 'column-reverse', sm: 'row' }, gap: 1 }}>
-          <Button onClick={handleClose} fullWidth>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="contained" fullWidth>
+        <DialogActions sx={dialogActionsSx}>
+          <Button onClick={handleClose}>Cancelar</Button>
+          <Button type="submit" variant="contained">
             Salvar
           </Button>
         </DialogActions>

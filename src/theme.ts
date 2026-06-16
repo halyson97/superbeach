@@ -124,8 +124,45 @@ export const theme = createTheme({
         paper: {
           borderRadius: 20,
           margin: 16,
-          width: 'calc(100% - 32px)',
-          maxWidth: '100%',
+          boxShadow: `0 24px 48px ${alpha('#0F172A', 0.12)}`,
+          '@media (max-width:599.95px)': {
+            width: 'calc(100% - 32px)',
+            maxWidth: 'calc(100% - 32px)',
+          },
+        },
+      },
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          fontSize: '1.125rem',
+          fontWeight: 700,
+          padding: '20px 24px 8px',
+          lineHeight: 1.3,
+        },
+      },
+    },
+    MuiDialogContent: {
+      styleOverrides: {
+        root: {
+          padding: '8px 24px 12px',
+        },
+      },
+    },
+    MuiDialogContentText: {
+      styleOverrides: {
+        root: {
+          fontSize: '0.9375rem',
+          lineHeight: 1.55,
+          color: '#64748B',
+        },
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          padding: '12px 24px 20px',
+          gap: 8,
         },
       },
     },

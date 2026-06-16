@@ -3,11 +3,6 @@ import {
   Button,
   Stack,
   Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Chip,
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -18,6 +13,7 @@ import { PageHeader } from '../components/PageHeader';
 import { MatchCard } from '../components/MatchCard';
 import { RankingTable } from '../components/RankingTable';
 import { ResultDialog } from '../components/ResultDialog';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useChampionshipStore } from '../store/championshipStore';
 import { allMatchesFinished } from '../utils/roundRobin';
 import type { Match } from '../types';
@@ -164,7 +160,7 @@ export function TournamentPage() {
             fullWidth
             sx={{ py: 1.5, borderRadius: 3 }}
           >
-            Finalizar Campeonato
+            Finalizar Jogo
           </Button>
         )}
       </Stack>
@@ -177,28 +173,15 @@ export function TournamentPage() {
         onSubmit={handleSubmitResult}
       />
 
-      <Dialog
+      <ConfirmDialog
         open={confirmFinish}
-        onClose={() => setConfirmFinish(false)}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle>Finalizar campeonato?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Todas as partidas foram concluídas. Deseja encerrar o campeonato e
-            ver o resultado final?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, flexDirection: { xs: 'column-reverse', sm: 'row' }, gap: 1 }}>
-          <Button onClick={() => setConfirmFinish(false)} fullWidth>
-            Cancelar
-          </Button>
-          <Button onClick={handleFinish} variant="contained" color="success" fullWidth>
-            Finalizar
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Finalizar jogo?"
+        description="Todas as partidas foram concluídas. Deseja encerrar o jogo e ver o resultado final?"
+        confirmLabel="Finalizar"
+        confirmColor="success"
+        onConfirm={handleFinish}
+        onCancel={() => setConfirmFinish(false)}
+      />
     </Layout>
   );
 }

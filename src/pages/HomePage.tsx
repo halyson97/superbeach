@@ -6,11 +6,6 @@ import {
   CardContent,
   Stack,
   Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   LinearProgress,
   Chip,
 } from '@mui/material';
@@ -24,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { Logo } from '../components/Logo';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useChampionshipStore } from '../store/championshipStore';
 import { getFinishedMatches, getTotalMatches } from '../utils/roundRobin';
 import { BRAND } from '../constants/brand';
@@ -124,12 +120,12 @@ export function HomePage() {
             borderRadius: 3,
           }}
         >
-          Novo Campeonato
+          Novo Jogo
         </Button>
 
         {hasActiveChampionship && (
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-            Finalize ou exclua o campeonato atual para iniciar um novo.
+            Finalize ou exclua o jogo atual para iniciar um novo.
           </Typography>
         )}
 
@@ -221,28 +217,15 @@ export function HomePage() {
         )}
       </Stack>
 
-      <Dialog
+      <ConfirmDialog
         open={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle>Excluir campeonato?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Esta ação não pode ser desfeita. Todos os dados do campeonato serão
-            removidos.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, flexDirection: { xs: 'column-reverse', sm: 'row' }, gap: 1 }}>
-          <Button onClick={() => setConfirmDelete(false)} fullWidth>
-            Cancelar
-          </Button>
-          <Button onClick={handleDelete} color="error" variant="contained" fullWidth>
-            Excluir
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Excluir jogo?"
+        description="Esta ação não pode ser desfeita. Todos os dados do jogo serão removidos."
+        confirmLabel="Excluir"
+        confirmColor="error"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </Layout>
   );
 }

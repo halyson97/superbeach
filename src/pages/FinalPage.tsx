@@ -49,7 +49,7 @@ export function FinalPage() {
     <Layout title="Resultado Final" maxWidth="md">
       <Stack spacing={{ xs: 3, sm: 4 }}>
         <PageHeader
-          title="Campeonato Finalizado!"
+          title="Jogo Finalizado!"
           subtitle={championship.name}
           backTo="/"
           backLabel="Início"
@@ -169,7 +169,7 @@ export function FinalPage() {
             onClick={handleNewChampionship}
             fullWidth
           >
-            Novo Campeonato
+            Novo Jogo
           </Button>
         </Stack>
       </Stack>
